@@ -1,0 +1,97 @@
+# dsh-mcp-toggle — combined document
+
+Enable/disable MCP servers directly from DSH Settings: an additive "MCP Servers" page that stops/starts each @deepseek-ai/dsh-mcp-client connection live and persists the change across restarts.
+
+- Repository: https://github.com/Zenjibad/dsh-mcp-toggle (public, MIT, topic `dsh-plugin`)
+- Human docs: [README.md](README.md) (English) · [README.zh.md](README.zh.md) (中文)
+- Agent guide: [AGENTS.md](AGENTS.md)
+- Source: [src/index.ts](src/index.ts) (host) · [src/client/index.tsx](src/client/index.tsx) (client)
+
+## What it does
+
+MCP servers in DSH are rows mounting `@deepseek-ai/dsh-mcp-client` (the user defines them in their patch layer). The web UI has no built-in way to stop/start them. This plugin adds a **MCP Servers** settings page with one toggle per server:
+
+- Flipping the switch **stops (disables) or starts (enables) the MCP connection immediately** — the mcp-client fiber is disposed (transport closed, `mcp__*` tools unregistered) or started fresh; no DSH restart.
+- Each change is **persisted** to the **home** patch layer `$DSH_HOME/cordis.patch.yml`, which outranks every profile layer, so the state survives a DSH restart regardless of where the MCP row originated.
+- Each row shows the server name, an Enabled/Disabled tag, and the connection phase (Connected / Stopped / Connecting / Connection failed).
+
+## How it works
+
+1. The client bundle registers an additive Settings page (`settings.section`, id `mcp-toggle`, order 70, label "MCP Servers").
+2. On mount it fetches `GET /mcp-toggle/api` → `{ entries: [{ entryId, serverName, enabled, fiberPhase }] }` — iterates `ctx.loader.entries()`, keeps only `entry.options.name === '@deepseek-ai/dsh-mcp-client'`, and uses `options.config.serverName` as the display name.
+3. Flipping a switch fetches `POST /mcp-toggle/api` with `{ entryId, disabled }`.
+4. The host half resolves the entry (`loader.resolve(entryId)`) and calls `entry.update({ disabled })`:
+   - disabling disposes the mcp-client fiber (the same operation `cordis_stop` performs; the connection's ctx.effect disposers tear down the transport and unregister tools),
+   - enabling starts it (`init()` when no fiber exists — covers entries disabled at boot).
+   - `Entry.update()` at the entry level does **not** write the loader tree back to any config file, so no patch flattening.
+5. For persistence the host appends `- id: <rawId>` / `disabled: <bool>` to `$DSH_HOME/cordis.patch.yml` (the HOME user patch layer). Patch rows are id-targeted overrides; later rows win, so re-enabling simply overrides the earlier `true`.
+6. Response `{ ok, entryId, serverName, disabled, fiberPhase, persisted, patchPath }` → client toast + list reload.
+
+## Why the home patch file (not the profile's)
+
+The web profile composes patches in order: **bundle → profile `cordis.patch.yml` → HOME `$DSH_HOME/cordis.patch.yml` → overlays**. The home layer OUTRANKS the per-profile layer, and MCP rows may live in either file. A disabled row in the HOME file wins for every MCP regardless of origin. Both files are HMR-watched (hot-apply without restart). This is the key difference from `dsh-plugin-toggle`, which persists to the profile patch layer (plugins originate from bundle patches, so the profile layer outranks them).
+
+## Install (packaged, persists across restarts)
+
+- `dsh plugin --profile web add ./dsh-mcp-toggle` (local dir) or `dsh plugin --profile web add github:Zenjibad/dsh-mcp-toggle` (or `git+https://github.com/Zenjibad/dsh-mcp-toggle.git`); then restart DSH **and hard-refresh the browser tab** (`Ctrl+F5`).
+- The package declares `dsh.bundle` (`cordis.patch.yml` inserts the host row) and `dsh.client` (`exports["./client"]` = the browser bundle, scanned by client-modules at boot). No cordis_define, no per-session re-install.
+- **Hard refresh is required after install/update**: the DSH client HMR only hot-swaps already-loaded bundles and does not pull new bundles into an open tab.
+- Remove: `dsh plugin --profile web rm dsh-mcp-toggle` + restart DSH. Previously persisted `$DSH_HOME/cordis.patch.yml` rows remain (they are the persistence layer, independent of this plugin).
+
+## Configuration
+
+No config file, no persisted settings of its own. Fixed constants in source:
+
+| Knob | Location | Default |
+| --- | --- | --- |
+| HTTP route | `src/index.ts` | `GET|POST /mcp-toggle/api` |
+| MCP plugin filter | `MCP_CLIENT_PLUGIN` in `src/index.ts` | `@deepseek-ai/dsh-mcp-client` |
+| Locked entries | `LOCKED` / `LOCKED_NAMES` in `src/index.ts` | `include`, `cordis:include`, `dsh-mcp-toggle` |
+| Settings page | `src/client/index.tsx` | `settings.section` id `mcp-toggle`, order 70 |
+| Toast duration | `src/client/index.tsx` | 6 s |
+| Persistence target | `$DSH_HOME/cordis.patch.yml` (home patch layer) | appended rows |
+
+## Key behaviors
+
+- Live toggle via `loader.resolve(entryId).update({ disabled })` — disposes or starts the mcp-client fiber immediately (tools unregister/register).
+- Persistence decoupled from the loader write path: only the HOME user patch layer is appended; `cordis.yml` and bundle patches are never touched.
+- Only `@deepseek-ai/dsh-mcp-client` rows are listed; `serverName` from `options.config` is the display name.
+- Locked ids (`include`, `cordis:include`, `dsh-mcp-toggle`) return `403`; unknown ids `404`; non-MCP entries `400`; POST bodies capped at 1 MB.
+- The host route never throws non-JSON; every failure is `{ok:false,error}` JSON.
+- Themed with `--dsw-alias-*` tokens only; no hardcoded colors.
+
+## Probed environment facts
+
+- A packaged host is a **real Node module**: `node:fs`, `node:path`, `node:os`, `process.env` work.
+- `@deepseek-ai/dsh-mcp-client` apply() owns the connection + tool registrations through ctx.effect disposers — disposing the fiber closes the transport and unregisters `mcp__*` tools; re-enabling starts fresh. serverName is reserved per root while the fiber is live (duplicate serverName across instances throws).
+- The web profile patch order is bundle → profile `cordis.patch.yml` → HOME `$DSH_HOME/cordis.patch.yml` → overlays; home outranks profile. `$DSH_HOME` defaults to `~/.dsh`.
+- Loader entry ids are prefixed (`include:<rawId>` via `Entry.get id()`); `loader.resolve()` round-trips them. Patch rows target the raw config id (`entry.options.id`).
+- `Entry.update({disabled})` at the entry level does NOT call `tree.write()` — no config flattening. `isNullable` matches only `null`/`undefined`, so `disabled: false` (re-enable) survives.
+- The client bundle is plain browser JS (ModuleLoader CJS factory): `fetch`, `document`, `window` are available; React comes from the module table (`external: react`).
+- The client must export `inject = ['slots']` (service key); the package.json `dsh.client.inject` lists package names (informational edges).
+- `settings.section` is a list slot; a fresh id adds a page beside the shipped ones.
+
+## Testing
+
+- Pre-restart: profile `package.json` `dependencies` + `dsh.profile.bundles` both list `dsh-mcp-toggle`; `lib/client.js` has the ModuleLoader wrapper; `lib/index.js` exports `name` + `apply`.
+- Post-restart (after hard refresh): Settings shows the "MCP Servers" page; `GET /mcp-toggle/api` returns the MCP entry list; toggling a server updates its phase immediately and appends a row to `$DSH_HOME/cordis.patch.yml`; a further DSH restart keeps the state.
+- Failure paths: locked id → `403` toast; unknown id → `404`; non-MCP entry → `400`; persistence append failure → toast says "not persisted across restart" (session-only toggle still works).
+- No automated test framework; the manual matrix above is the verification contract.
+
+## Build
+
+`pnpm install && pnpm build` → `lib/index.js` (host, node ESM) + `lib/client.js` (client, CJS ModuleLoader closure, bundle id = package name). See `tsdown.config.ts`.
+
+## Repository layout
+
+- `src/index.ts` — host half
+- `src/client/index.tsx` — client bundle
+- `cordis.patch.yml` — `dsh.bundle` patch
+- `tsdown.config.ts` — build config
+- `package.json` — `exports["./client"]`, `dsh.client`, `dsh.bundle`
+- `AGENTS.md` — agent guide
+- `README.md`, `README.zh.md` — bilingual docs
+
+## License
+
+MIT

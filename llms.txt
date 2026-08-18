@@ -1,0 +1,29 @@
+# dsh-mcp-toggle
+
+> Enable/disable MCP servers directly from DSH Settings: an additive "MCP Servers" page that stops/starts each @deepseek-ai/dsh-mcp-client connection live and persists the change across restarts. 在 DSH 设置 → MCP 服务器页面直接启用/停用 MCP：即时停止/启动每个 MCP 客户端连接，并持久化。
+
+For the complete combined document, see [llms-full.txt](llms-full.txt). For human-readable docs, see [README.md](README.md) (English) and [README.zh.md](README.zh.md) (中文).
+
+## Key facts
+
+- [Repository](https://github.com/Zenjibad/dsh-mcp-toggle): public GitHub repo, MIT license, `dsh-plugin` topic.
+- [Install](README.md#-quick-start): packaged profile plugin — `dsh plugin --profile web add <spec>` (local dir, `github:Zenjibad/dsh-mcp-toggle`, or `git+https://github.com/Zenjibad/dsh-mcp-toggle.git`), then restart DSH **and hard-refresh the browser tab**. `dsh.bundle` (`cordis.patch.yml`) mounts the host half; `dsh.client` + `exports["./client"]` register the browser half. Survives restarts, no cordis_define.
+- [Toggle mechanics](README.md#️-how-it-works): client POSTs `{ entryId, disabled }` to `/mcp-toggle/api`; host filters `entry.options.name === '@deepseek-ai/dsh-mcp-client'`, calls `loader.resolve(entryId).update({ disabled })` (disposes/starts the mcp-client fiber live — tools unregister/register), and appends `- id: <rawId>` / `disabled: <bool>` to the **home** patch layer `$DSH_HOME/cordis.patch.yml` (outranks every profile layer → wins at boot).
+- [UI seat](README.md#-features): additive Settings page `settings.section` (id `mcp-toggle`, order 70) listing every MCP server with a toggle.
+- [Safety](README.md#-faq): only `@deepseek-ai/dsh-mcp-client` rows are listed; `include` and this plugin itself are locked (`403`); unknown ids `404`; non-MCP entries `400`; POST bodies capped at 1 MB; the host never writes `cordis.yml` or bundle patches.
+
+## Documentation
+
+- [README.md (English)](README.md): features, architecture, quick start, config, FAQ, security notes.
+- [README.zh.md (中文)](README.zh.md): same content in Chinese.
+- [src/index.ts](src/index.ts): host half — MCP entry list (filter + serverName projection), `loader.resolve().update()`, home patch append, `GET|POST /mcp-toggle/api`.
+- [src/client/index.tsx](src/client/index.tsx): client bundle — MCP Servers settings page, toggle switches, status tags, toast.
+- [AGENTS.md](AGENTS.md): repository guide for AI agents (layout, key behaviors, probed environment facts, testing).
+- [package.json](package.json): npm metadata with `dsh.bundle` + `dsh.client` manifests for `dsh plugin add`.
+
+## Source layout
+
+- [src/index.ts](src/index.ts): the host half — a real Node module: iterates `ctx.loader.entries()` filtering `@deepseek-ai/dsh-mcp-client`, `loader.resolve(entryId).update({disabled})` for the live toggle, appends a patch row to `$DSH_HOME/cordis.patch.yml` (home patch layer) for persistence.
+- [src/client/index.tsx](src/client/index.tsx): the client bundle — `settings.section` registration (id `mcp-toggle`), `fetch` GET/POST to the host route, `<style data-plugin>` with `--dsw-alias-*` theming.
+- [cordis.patch.yml](cordis.patch.yml): `dsh.bundle` patch inserting the plugin row.
+- [tsdown.config.ts](tsdown.config.ts): builds host (node ESM) + client (CJS ModuleLoader closure).

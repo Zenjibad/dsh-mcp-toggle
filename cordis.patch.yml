@@ -1,0 +1,9 @@
+# dsh-mcp-toggle — bundle patch layer.
+#
+# Mounts the plugin row at DSH boot via `dsh.bundle.patch`. When installed
+# through the official CLI (or as a profile dependency) the profile boot
+# merges this patch and mounts the host half (`lib/index.js`); the
+# `dsh.client` declaration + `exports["./client"]` register the browser half.
+- insert:
+    - id: dsh-mcp-toggle
+      name: 'dsh-mcp-toggle'

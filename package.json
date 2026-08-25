@@ -76,6 +76,8 @@
   "scripts": {
     "build": "tsdown",
     "watch": "tsdown --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/dsh-mcp-toggle.test.mjs && node tests/dsh-mcp-toggle-locked.test.mjs",
+    "check": "pnpm typecheck && pnpm test"
   }
 }

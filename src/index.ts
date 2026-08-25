@@ -49,6 +49,16 @@ const FIBER_PHASE: Record<number, string | null> = {
 const LOCKED = new Set(['include'])
 const LOCKED_NAMES = new Set(['cordis:include', 'dsh-mcp-toggle'])
 
+/** Map a Cordis Fiber phase to its human label, or null. */
+export function fiberPhaseLabel(phase: number): string | null {
+  return FIBER_PHASE[phase] ?? null
+}
+
+/** True if a load id or module name must never be toggled. */
+export function isLocked(id: string, name: string): boolean {
+  return LOCKED.has(id) || LOCKED_NAMES.has(name)
+}
+
 /** The webServer route-registration service (typed loosely to avoid hard deps). */
 interface WebServerLike {
   register(route: {

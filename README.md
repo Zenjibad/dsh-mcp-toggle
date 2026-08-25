@@ -8,6 +8,10 @@
 
 **Keywords**: `dsh-plugin` · `deepseek-harness-plugin` · mcp · mcp-client · settings · enable · disable · toggle · MCP 服务器 · 启用 · 停用
 
+## Repo
+
+GitHub: [Zenjibad/dsh-mcp-toggle](https://github.com/Zenjibad/dsh-mcp-toggle) · Requires DSH ≥ 0.1 with the web profile.
+
 ---
 
 ## 📑 Table of Contents

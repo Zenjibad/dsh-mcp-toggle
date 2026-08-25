@@ -3,7 +3,7 @@
     "target": "ES2023",
     "module": "esnext",
     "moduleResolution": "bundler",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023","DOM","DOM.Iterable"],
     "jsx": "react-jsx",
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -15,5 +15,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src", "tsdown.config.ts"]
+  "include": ["src","tsdown.config.ts","tests"]
 }

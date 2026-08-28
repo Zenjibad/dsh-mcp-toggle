@@ -1,6 +1,6 @@
 {
   "name": "dsh-mcp-toggle",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Enable/disable MCP servers directly from DSH Settings: a 'MCP Servers' page that stops/starts @deepseek-ai/dsh-mcp-client connections live and persists the change across restarts.",
   "license": "MIT",
   "repository": {
@@ -81,3 +81,4 @@
     "check": "pnpm typecheck && pnpm test"
   }
 }
+

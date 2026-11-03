@@ -14,7 +14,7 @@ This file helps AI coding agents and LLM tooling understand and work with this r
 | `src/client/index.tsx` | Client bundle: additive `settings.section` registration (id `mcp-toggle`, order 70, label "MCP Servers"), toggle switches, status tags, toast, `<style data-plugin>` with `--dsw-alias-*` tokens. |
 | `cordis.patch.yml` | `dsh.bundle.patch`: inserts the plugin row `{id: dsh-mcp-toggle, name: 'dsh-mcp-toggle'}`. |
 | `tsdown.config.ts` | Builds host (node ESM → `lib/index.js`) + client (browser CJS ModuleLoader closure → `lib/client.js`, bundle id = package name). |
-| `package.json` | `exports["./client"]`, `dsh.bundle.patch`, `dsh.client` (`platform: 'web'`, inject edges), peers react + @deepseek-ai/cordis. |
+| `package.json` | `exports["./client"]`, `dsh.bundle.patch`, `dsh.client` (`platform: 'web'`, `inject: []`), peers react + @deepseek-ai/cordis. |
 | `README.md` / `README.zh.md` | Human docs (en default, zh). |
 | `llms.txt` / `llms-full.txt` | LLM-friendly doc index / full text. |
 
@@ -47,7 +47,8 @@ This file helps AI coding agents and LLM tooling understand and work with this r
 - Loader `Entry.get id()` returns the prefixed form (`include:<rawId>`); `pluginInventory.list()` returns that same `entryId`; `loader.resolve(entryId)` round-trips it.
 - `Entry.update()` at the entry level does NOT call `tree.write()`; `isNullable` matches only `null`/`undefined`, so `disabled: false` (re-enable) is kept.
 - The client bundle is plain browser JS (ModuleLoader CJS factory): `fetch`, `document`, `window` are available; React comes from the module table (`external: react`).
-- The client must export `inject = ['slots']` (service key); the package.json `dsh.client.inject` lists package names (informational edges).
+- The client must export `inject = ['slots']` (service key) — that is the service gate.
+- The package.json `dsh.client.inject` must stay `[]`. It names **plugin rows** whose factories must arrive first, and this bundle only requires `react`, which is a module-table seed. DSH 0.2 deleted `@deepseek-ai/dsh-client-runtime` and `@deepseek-ai/dsh-client-ui-slots`, the two names this list used to carry; because `ClientEntries` silently skips an inject name that is not a graph row, a stale list here does not error — it just leaves the client half waiting on packages that will never arrive.
 - `settings.section` is a list slot; a fresh id adds a page beside the shipped ones.
 
 ## Testing

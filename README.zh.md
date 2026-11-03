@@ -10,7 +10,7 @@
 
 ## 仓库 / Repo
 
-GitHub: [Zenjibad/dsh-mcp-toggle](https://github.com/Zenjibad/dsh-mcp-toggle) · 需要 DSH ≥ 0.1 及 web profile。
+GitHub: [Zenjibad/dsh-mcp-toggle](https://github.com/Zenjibad/dsh-mcp-toggle) · 需要 DSH ≥ 0.2 及 web profile（基于 0.2.1-rc.5 构建并验证）。
 
 ---
 

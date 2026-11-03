@@ -68,7 +68,7 @@ No config file, no persisted settings of its own. Fixed constants in source:
 - Loader entry ids are prefixed (`include:<rawId>` via `Entry.get id()`); `loader.resolve()` round-trips them. Patch rows target the raw config id (`entry.options.id`).
 - `Entry.update({disabled})` at the entry level does NOT call `tree.write()` — no config flattening. `isNullable` matches only `null`/`undefined`, so `disabled: false` (re-enable) survives.
 - The client bundle is plain browser JS (ModuleLoader CJS factory): `fetch`, `document`, `window` are available; React comes from the module table (`external: react`).
-- The client must export `inject = ['slots']` (service key); the package.json `dsh.client.inject` lists package names (informational edges).
+- The client must export `inject = ['slots']` (service key) — that is the service gate. The package.json `dsh.client.inject` must stay `[]`: it names plugin rows whose factories must arrive first, this bundle only requires `react` (a module-table seed), and DSH 0.2 deleted the two packages it used to list (`@deepseek-ai/dsh-client-runtime`, `@deepseek-ai/dsh-client-ui-slots`).
 - `settings.section` is a list slot; a fresh id adds a page beside the shipped ones.
 
 ## Testing

@@ -1,6 +1,6 @@
 {
   "name": "dsh-mcp-toggle",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Enable/disable MCP servers directly from DSH Settings: a 'MCP Servers' page that stops/starts @deepseek-ai/dsh-mcp-client connections live and persists the change across restarts.",
   "license": "MIT",
   "repository": {
@@ -35,10 +35,7 @@
       "patch": "./cordis.patch.yml"
     },
     "client": {
-      "inject": [
-        "@deepseek-ai/dsh-client-runtime",
-        "@deepseek-ai/dsh-client-ui-slots"
-      ],
+      "inject": [],
       "platform": "web"
     }
   },
@@ -81,4 +78,3 @@
     "check": "pnpm typecheck && pnpm test"
   }
 }
-

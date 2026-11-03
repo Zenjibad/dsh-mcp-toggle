@@ -10,7 +10,7 @@
 
 ## Repo
 
-GitHub: [Zenjibad/dsh-mcp-toggle](https://github.com/Zenjibad/dsh-mcp-toggle) · Requires DSH ≥ 0.1 with the web profile.
+GitHub: [Zenjibad/dsh-mcp-toggle](https://github.com/Zenjibad/dsh-mcp-toggle) · Requires DSH ≥ 0.2 with the web profile (built and verified against 0.2.1-rc.5).
 
 ---
 
